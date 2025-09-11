@@ -44,39 +44,6 @@ function Request-AdminRights {
 }
 
 # Main Functions
-function Show-Menu {
-    Write-Header "PC MANAGER BOT - ONE-CLICK SETUP"
-    Write-ColorText "✅ Running with Administrator privileges!" "Green"
-    Write-Host ""
-    Write-ColorText "📊 SYSTEM INFO:" "Cyan"
-    Write-ColorText "   💻 OS: $env:OS" "White"
-    Write-ColorText "   👤 User: $env:USERNAME" "White"
-    Write-ColorText "   🖥️  Computer: $env:COMPUTERNAME" "White"
-    Write-ColorText "   📁 Install Path: $InstallPath" "White"
-    Write-Host ""
-    
-    $service = Get-Service -Name "PCManagerBot" -ErrorAction SilentlyContinue
-    if ($service) {
-        $status = if ($service.Status -eq "Running") { "🟢 RUNNING" } else { "🔴 STOPPED" }
-        Write-ColorText "🤖 Bot Status: $status" "Green"
-    } else {
-        Write-ColorText "🤖 Bot Status: 🔘 NOT INSTALLED" "Yellow"
-    }
-    Write-Host ""
-    
-    Write-ColorText "🎯 AVAILABLE ACTIONS:" "Yellow"
-    Write-ColorText "   1️⃣  Install Bot (Auto download + setup service)" "White"
-    Write-ColorText "   2️⃣  Start Bot Service" "White" 
-    Write-ColorText "   3️⃣  Stop Bot Service" "White"
-    Write-ColorText "   4️⃣  Check Status" "White"
-    Write-ColorText "   5️⃣  Uninstall Bot (Complete removal)" "White"
-    Write-ColorText "   0️⃣  Exit" "White"
-    Write-Host ""
-    
-    $choice = Read-Host "Select option (0-5)"
-    return $choice
-}
-
 function Install-Bot {
     Write-Header "INSTALLING PC MANAGER BOT"
     
@@ -244,13 +211,13 @@ function Install-Bot {
 @echo off
 title Start PC Manager Bot
 echo Starting PC Manager Bot Service...
-net start $serviceName
+net start PCManagerBot
 if %errorlevel% equ 0 (
-    echo ✅ Bot started successfully!
-    echo 📱 Check Telegram to use the bot
+    echo Bot started successfully!
+    echo Check Telegram to use the bot
 ) else (
-    echo ❌ Failed to start bot
-    echo 🔧 Check Windows Services for details
+    echo Failed to start bot
+    echo Check Windows Services for details
 )
 pause
 "@
@@ -259,11 +226,11 @@ pause
 @echo off
 title Stop PC Manager Bot  
 echo Stopping PC Manager Bot Service...
-net stop $serviceName
+net stop PCManagerBot
 if %errorlevel% equ 0 (
-    echo ✅ Bot stopped successfully!
+    echo Bot stopped successfully!
 ) else (
-    echo ❌ Failed to stop bot
+    echo Failed to stop bot
 )
 pause
 "@
@@ -271,22 +238,22 @@ pause
         $statusScript = @"
 @echo off
 title PC Manager Bot Status
-echo ════════════════════════════════════════════════════════
+echo ============================================================
 echo                PC MANAGER BOT - STATUS
-echo ════════════════════════════════════════════════════════
+echo ============================================================
 echo.
-sc query $serviceName
+sc query PCManagerBot
 echo.
-echo ════════════════════════════════════════════════════════
-echo 📁 Install Path: $InstallPath
-echo 🤖 Bot Executable: $($botExe.Name)
-echo 📄 Output Log: $InstallPath\bot-output.log
-echo 📄 Error Log: $InstallPath\bot-error.log
-echo ════════════════════════════════════════════════════════
+echo ============================================================
+echo Install Path: $InstallPath
+echo Bot Executable: $($botExe.Name)
+echo Output Log: $InstallPath\bot-output.log
+echo Error Log: $InstallPath\bot-error.log
+echo ============================================================
 echo.
 if exist "$InstallPath\bot-output.log" (
-    echo 📄 Recent bot output:
-    echo ────────────────────────────────────────────────────────
+    echo Recent bot output:
+    echo ------------------------------------------------------------
     type "$InstallPath\bot-output.log" 2>nul | more
 )
 pause
@@ -508,33 +475,61 @@ function Uninstall-Bot {
     Write-ColorText "🎉 PC Manager Bot uninstalled successfully!" "Green"
 }
 
-# Main Execution
+# Main Execution - AUTO INSTALL
 try {
     Request-AdminRights
     
-    # Handle command line parameters
-    if ($Uninstall) { Uninstall-Bot; return }
-    if ($Start) { Start-BotService; return }
-    if ($Stop) { Stop-BotService; return }
-    if ($Status) { Show-BotStatus; return }
+    # Handle command line parameters for service management
+    if ($Uninstall) { 
+        Uninstall-Bot
+        Read-Host "Press Enter to exit"
+        return 
+    }
+    if ($Start) { 
+        Start-BotService
+        Read-Host "Press Enter to exit"
+        return 
+    }
+    if ($Stop) { 
+        Stop-BotService
+        Read-Host "Press Enter to exit"
+        return 
+    }
+    if ($Status) { 
+        Show-BotStatus
+        Read-Host "Press Enter to exit"
+        return 
+    }
     
-    # Interactive menu
-    do {
-        $choice = Show-Menu
-        switch ($choice) {
-            "1" { Install-Bot }
-            "2" { Start-BotService }
-            "3" { Stop-BotService }
-            "4" { Show-BotStatus }
-            "5" { Uninstall-Bot }
-            "0" { Write-ColorText "👋 Goodbye!" "Cyan"; break }
-            default { Write-ColorText "❌ Invalid choice!" "Red" }
-        }
-        if ($choice -ne "0") { 
-            Write-Host ""
-            Read-Host "Press Enter to continue" 
-        }
-    } while ($choice -ne "0")
+    # DEFAULT ACTION: AUTO INSTALL
+    Write-Header "PC MANAGER BOT - AUTO INSTALLER"
+    Write-ColorText "🚀 Starting automatic installation..." "Cyan"
+    Write-ColorText "   ⬇️  Download bot from GitHub" "Yellow"
+    Write-ColorText "   📦 Extract to C:\PCManagerBot" "Yellow"
+    Write-ColorText "   🔧 Install Windows Service" "Yellow"
+    Write-ColorText "   ▶️  Start bot service" "Yellow"
+    Write-Host ""
+    
+    $success = Install-Bot
+    
+    if ($success) {
+        Write-Header "INSTALLATION SUCCESSFUL"
+        Write-ColorText "🎉 PC Manager Bot is now running!" "Green"
+        Write-Host ""
+        Write-ColorText "📱 NEXT STEPS:" "Yellow"
+        Write-ColorText "   1️⃣  Open your Telegram bot" "White"
+        Write-ColorText "   2️⃣  Send: /start" "White"
+        Write-ColorText "   3️⃣  Use: /cmd or /powershell" "White"
+        Write-ColorText "   4️⃣  Enjoy full PC control! 🎯" "White"
+        Write-Host ""
+        Write-ColorText "🔧 MANAGEMENT:" "Yellow"
+        Write-ColorText "   🚀 Start: powershell -ExecutionPolicy Bypass -Command \"iex (irm YOUR-RAW-LINK)\" -Start" "White"
+        Write-ColorText "   🛑 Stop:  powershell -ExecutionPolicy Bypass -Command \"iex (irm YOUR-RAW-LINK)\" -Stop" "White"
+        Write-ColorText "   📊 Status: powershell -ExecutionPolicy Bypass -Command \"iex (irm YOUR-RAW-LINK)\" -Status" "White"
+        Write-ColorText "   🗑️  Uninstall: powershell -ExecutionPolicy Bypass -Command \"iex (irm YOUR-RAW-LINK)\" -Uninstall" "White"
+    } else {
+        Write-ColorText "❌ Installation failed! Check errors above." "Red"
+    }
     
 } catch {
     Write-ColorText "❌ Unexpected error: $($_.Exception.Message)" "Red"
@@ -545,6 +540,8 @@ try {
     Write-ColorText "   • Internet connection" "White"
     Write-ColorText "   • Administrator privileges" "White"  
     Write-ColorText "   • Windows Defender/Antivirus settings" "White"
+    Write-Host ""
+    Read-Host "Press Enter to exit"
 }
 
 # One-liner usage examples:
